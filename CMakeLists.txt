@@ -58,11 +58,27 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++ -Wl,-
 add_compile_options(-nostdinc++ -Wall -Wextra -Werror)
 add_compile_options(-Wno-unused-parameter) # Until fix of irods_re_plugin.hpp
 add_compile_options(-Wno-unneeded-internal-declaration) # Until fix of https://github.com/irods/irods/issues/3396
-#link_libraries(c++abi
-#               ${IRODS_EXTERNALS_PACKAGE_ROOT}/jansson2.7-0/lib/libjansson.so)
-#include_directories(${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1
-#                    ${IRODS_EXTERNALS_PACKAGE_ROOT}/jansson2.7-0/include)
-include_directories(SYSTEM /usr/include/c++/4.8.5 /usr/include/c++/4.8.5/x86_64-redhat-linux)
+# Ensure that the default include system directories are added to the list of CMake implicit includes.
+# This workarounds an issue that happens when using GCC  and using system includes (-isystem).
+macro(DETERMINE_GCC_SYSTEM_INCLUDE_DIRS _lang _compiler _flags _result)
+    file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/dummy" "\n")
+    separate_arguments(_buildFlags UNIX_COMMAND "${_flags}")
+    execute_process(COMMAND ${_compiler} ${_buildFlags} -v -E -x ${_lang} -dD dummy
+                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles OUTPUT_QUIET
+                    ERROR_VARIABLE _gccOutput)
+    file(REMOVE "${CMAKE_BINARY_DIR}/CMakeFiles/dummy")
+    if ("${_gccOutput}" MATCHES "> search starts here[^\n]+\n *(.+) *\n *End of (search) list")
+        set(${_result} ${CMAKE_MATCH_1})
+        string(REPLACE "\n" " " ${_result} "${${_result}}")
+        separate_arguments(${_result})
+    endif ()
+endmacro()
+
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+   DETERMINE_GCC_SYSTEM_INCLUDE_DIRS("c++" "${CMAKE_CXX_COMPILER}" "${CMAKE_CXX_FLAGS}" SYSTEM_INCLUDE_DIRS)
+endif ()
+include_directories(SYSTEM ${SYSTEM_INCLUDE_DIRS})
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_INSTALL_RPATH ${IRODS_EXTERNALS_FULLPATH_CLANG_RUNTIME}/lib)
@@ -79,6 +95,7 @@ target_include_directories(
   irods_azure_plugin_wrapper
   PRIVATE
   ${BOOST_ROOT}/include
+  ${BOOST_ROOT}/include/boost
   )
 target_link_libraries(
   irods_azure_plugin_wrapper
