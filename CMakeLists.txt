@@ -111,14 +111,19 @@ install(
   TARGETS
   irods_azure_plugin_wrapper
   LIBRARY
-  DESTINATION ${IRODS_PLUGINS_DIRECTORY}/resources
+  DESTINATION /usr/local/lib
   )
 
 install(
-  FILES
+  FILES 
   PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
   )
 
+
+install(
+  FILES azurewrapper/libazurewrapper.hpp
+  DESTINATION /usr/local/include 
+  )
 
 if (IRODS_LINUX_DISTRIBUTION_NAME STREQUAL "ubuntu" OR IRODS_LINUX_DISTRIBUTION_NAME STREQUAL "debian")
   if (NOT IRODS_PLUGIN_LINUX_DISTRIBUTION_VERSION_CODENAME)
